@@ -1,0 +1,1326 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Desafío Botánico: El Gran Laboratorio Vegetal</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Inter & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Canvas Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Plus Jakarta Sans', 'sans-serif'],
+            display: ['Outfit', 'sans-serif'],
+          },
+          colors: {
+            botanical: {
+              50: '#f0fdf4',
+              100: '#dcfce7',
+              200: '#bbf7d0',
+              300: '#86efac',
+              400: '#4ade80',
+              500: '#22c55e',
+              600: '#16a34a',
+              700: '#15803d',
+              800: '#166534',
+              900: '#14532d',
+              950: '#052e16',
+            },
+            leaf: '#10b981',
+            emeraldDark: '#064e3b',
+            accentGold: '#f59e0b',
+            floraPurple: '#8b5cf6',
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom Botanical & Glassmorphism Styling */
+    .glass-card {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.6);
+    }
+    .dark-glass-card {
+      background: rgba(6, 78, 59, 0.75);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(52, 211, 153, 0.25);
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.05);
+      border-radius: 8px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #10b981;
+      border-radius: 8px;
+    }
+    @keyframes pulse-subtle {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.03); }
+    }
+    .animate-subtle {
+      animation: pulse-subtle 3s ease-in-out infinite;
+    }
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #certificate-modal, #certificate-modal * {
+        visibility: visible;
+      }
+      #certificate-modal {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        background: white !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+
+<body class="bg-gradient-to-br from-slate-950 via-emerald-950 to-slate-900 text-slate-100 min-h-screen font-sans flex flex-col selection:bg-emerald-500 selection:text-white relative overflow-x-hidden">
+
+  <div class="fixed inset-0 pointer-events-none overflow-hidden z-0">
+    <div class="absolute -top-32 -left-32 w-96 h-96 bg-emerald-500/15 rounded-full blur-3xl"></div>
+    <div class="absolute top-1/2 -right-40 w-[30rem] h-[30rem] bg-teal-500/10 rounded-full blur-3xl"></div>
+    <div class="absolute -bottom-32 left-1/3 w-[26rem] h-[26rem] bg-amber-500/10 rounded-full blur-3xl"></div>
+    <div class="absolute inset-0 bg-[radial-gradient(#10b981_1px,transparent_1px)] [background-size:24px_24px] opacity-[0.07]"></div>
+  </div>
+
+  <header class="relative z-10 w-full border-b border-emerald-800/40 bg-slate-900/60 backdrop-blur-md sticky top-0 px-4 sm:px-8 py-3">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+      
+      <!-- Brand Logo -->
+      <div class="flex items-center space-x-3 cursor-pointer" onclick="goToScreen('map')">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center shadow-lg shadow-emerald-900/40 text-white">
+          <i data-lucide="sprout" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <h1 class="text-lg font-bold font-display text-white tracking-wide flex items-center gap-1.5">
+            Desafío Botánico <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-400/30">v2.0</span>
+          </h1>
+          <p class="text-xs text-emerald-300/80 font-medium">Laboratorio de Evaluación Interactiva</p>
+        </div>
+      </div>
+
+      <!-- Live Player Stats -->
+      <div class="flex items-center space-x-4 sm:space-x-6">
+        <!-- Audio toggle -->
+        <button id="sound-btn" onclick="toggleSound()" class="p-2 rounded-xl bg-emerald-900/30 border border-emerald-700/40 text-emerald-300 hover:bg-emerald-800/40 transition">
+          <i id="sound-icon" data-lucide="volume-2" class="w-5 h-5"></i>
+        </button>
+
+        <!-- Lives / Hearts -->
+        <div class="flex items-center gap-1.5 bg-rose-950/40 border border-rose-800/50 px-3 py-1.5 rounded-xl">
+          <i data-lucide="heart" class="w-4 h-4 text-rose-500 fill-rose-500"></i>
+          <span id="player-lives" class="font-bold text-sm text-rose-200">3</span>
+        </div>
+
+        <!-- Score & Combo -->
+        <div class="flex items-center gap-2 bg-emerald-950/50 border border-emerald-700/50 px-3.5 py-1.5 rounded-xl">
+          <i data-lucide="award" class="w-4 h-4 text-amber-400"></i>
+          <div class="flex flex-col text-right">
+            <span id="player-score" class="font-bold font-display text-base text-amber-300 leading-tight">0</span>
+            <span id="player-streak" class="text-[10px] text-emerald-400 font-semibold">Racha x1</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="relative z-10 flex-1 max-w-5xl w-full mx-auto p-4 sm:p-6 md:p-8 flex flex-col justify-center">
+
+    <!-- SCREEN 1: WELCOME SCREEN -->
+    <div id="screen-welcome" class="space-y-8 my-auto">
+      <div class="text-center max-w-2xl mx-auto space-y-4">
+        <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-400/30 text-emerald-300 text-xs font-semibold uppercase tracking-wider mb-2">
+          <i data-lucide="dna" class="w-4 h-4"></i> Evaluación Gamificada de Biología Vegetal
+        </div>
+        <h2 class="text-4xl sm:text-5xl font-extrabold font-display text-transparent bg-clip-text bg-gradient-to-r from-emerald-200 via-teal-100 to-emerald-400 tracking-tight leading-tight">
+          Conviértete en Maestro Botánico
+        </h2>
+        <p class="text-slate-300 text-base sm:text-lg leading-relaxed">
+          Pon a prueba tus conocimientos a través de los 4 módulos esenciales: Citología, Fisiología, Anatomía interna y Biotecnología Vegetal moderna.
+        </p>
+      </div>
+
+      <!-- Player Name Card -->
+      <div class="max-w-md mx-auto dark-glass-card p-6 sm:p-8 rounded-3xl shadow-2xl border border-emerald-500/30 space-y-5">
+        <div>
+          <label for="student-name-input" class="block text-xs font-semibold tracking-wider uppercase text-emerald-300 mb-2">
+            Nombre del Investigador / Estudiante
+          </label>
+          <div class="relative">
+            <i data-lucide="user" class="w-5 h-5 text-emerald-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+            <input type="text" id="student-name-input" placeholder="Ej. Dra. Valeria Arana" value="Explorador Botánico"
+              class="w-full bg-slate-900/80 border border-emerald-700/60 rounded-xl pl-11 pr-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent text-sm font-medium transition">
+          </div>
+        </div>
+
+        <div class="bg-emerald-950/40 p-3.5 rounded-2xl border border-emerald-800/40 flex items-start gap-3">
+          <i data-lucide="info" class="w-5 h-5 text-emerald-400 shrink-0 mt-0.5"></i>
+          <p class="text-xs text-slate-300 leading-normal">
+            Tienes <strong>3 vidas</strong> para completar las misiones. Respuestas consecutivas activan el <strong>multiplicador de puntos</strong>. Al terminar, recibirás tu certificado de aprobación.
+          </p>
+        </div>
+
+        <button onclick="startGame()" class="w-full group bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-bold font-display py-3.5 px-6 rounded-xl shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 transition duration-200 transform hover:-translate-y-0.5 active:translate-y-0">
+          <span>Ingresar a los Módulos</span>
+          <i data-lucide="arrow-right" class="w-5 h-5 transition-transform group-hover:translate-x-1"></i>
+        </button>
+      </div>
+
+      <!-- Module Preview Cards -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 max-w-4xl mx-auto pt-4 text-xs text-slate-400">
+        <div class="p-3 bg-slate-900/40 rounded-xl border border-slate-800 flex items-center gap-2.5">
+          <span class="p-2 rounded-lg bg-emerald-500/20 text-emerald-300"><i data-lucide="layers" class="w-4 h-4"></i></span>
+          <span>1. Célula y Clasificación</span>
+        </div>
+        <div class="p-3 bg-slate-900/40 rounded-xl border border-slate-800 flex items-center gap-2.5">
+          <span class="p-2 rounded-lg bg-amber-500/20 text-amber-300"><i data-lucide="sun" class="w-4 h-4"></i></span>
+          <span>2. Fotosíntesis y Fitohormonas</span>
+        </div>
+        <div class="p-3 bg-slate-900/40 rounded-xl border border-slate-800 flex items-center gap-2.5">
+          <span class="p-2 rounded-lg bg-teal-500/20 text-teal-300"><i data-lucide="git-commit" class="w-4 h-4"></i></span>
+          <span>3. Anatomía y Tejidos</span>
+        </div>
+        <div class="p-3 bg-slate-900/40 rounded-xl border border-slate-800 flex items-center gap-2.5">
+          <span class="p-2 rounded-lg bg-purple-500/20 text-purple-300"><i data-lucide="flask-conical" class="w-4 h-4"></i></span>
+          <span>4. Biotecnología y Genética</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCREEN 2: MODULE / MISSION SELECTOR MAP -->
+    <div id="screen-map" class="hidden space-y-6">
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-emerald-900/40 pb-4">
+        <div>
+          <span class="text-xs font-semibold tracking-wider text-emerald-400 uppercase">Centro de Investigaciones</span>
+          <h2 class="text-2xl sm:text-3xl font-bold font-display text-white">Mapa de Misiones de Evaluación</h2>
+        </div>
+        <!-- Overall Progress Pill -->
+        <div class="bg-slate-900/80 border border-emerald-700/50 px-4 py-2 rounded-2xl flex items-center gap-3">
+          <div class="text-xs font-medium text-slate-300">Progreso General:</div>
+          <div class="w-28 bg-slate-800 h-2.5 rounded-full overflow-hidden border border-slate-700">
+            <div id="overall-progress-bar" class="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full transition-all duration-500" style="width: 0%"></div>
+          </div>
+          <span id="overall-progress-text" class="text-xs font-bold text-emerald-400">0%</span>
+        </div>
+      </div>
+
+      <!-- Modules Cards Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5" id="modules-grid-container">
+        <!-- Rendered dynamically by JS -->
+      </div>
+
+      <!-- Quick Exam Mode Button -->
+      <div class="flex justify-center pt-2">
+        <button onclick="startFullEvaluation()" class="px-6 py-3 rounded-xl bg-slate-800/80 hover:bg-slate-800 border border-emerald-600/40 text-emerald-300 hover:text-white text-sm font-semibold transition flex items-center gap-2">
+          <i data-lucide="play-circle" class="w-5 h-5 text-emerald-400"></i>
+          <span>Comenzar Examen Integral Completo (Todos los módulos)</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- SCREEN 3: GAME / QUIZ PLAY AREA -->
+    <div id="screen-game" class="hidden space-y-6">
+      <!-- Challenge Header: Module Info, Timer & Progress -->
+      <div class="dark-glass-card rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4 border border-emerald-600/30">
+        <div class="flex items-center gap-3 w-full sm:w-auto">
+          <button onclick="goToScreen('map')" class="p-2 rounded-xl bg-slate-800/60 hover:bg-slate-800 text-slate-300 hover:text-white transition">
+            <i data-lucide="chevron-left" class="w-5 h-5"></i>
+          </button>
+          <div>
+            <span id="active-module-badge" class="text-[11px] font-bold uppercase tracking-wider text-emerald-300">Módulo 1</span>
+            <h3 id="active-module-title" class="text-base sm:text-lg font-bold font-display text-white">Introducción a la Biología Vegetal</h3>
+          </div>
+        </div>
+
+        <!-- Timer & Question counter -->
+        <div class="flex items-center justify-between w-full sm:w-auto gap-4">
+          <!-- Step Counter -->
+          <div class="text-xs font-semibold text-slate-300 bg-slate-900/60 px-3 py-1.5 rounded-lg border border-slate-800">
+            Pregunta <span id="current-q-index" class="text-emerald-400 font-bold">1</span> / <span id="total-q-count">5</span>
+          </div>
+          <!-- Question Timer -->
+          <div class="flex items-center gap-2 bg-slate-900/60 border border-slate-800 px-3 py-1.5 rounded-lg text-xs font-bold text-amber-300">
+            <i data-lucide="timer" class="w-4 h-4 text-amber-400"></i>
+            <span id="time-remaining">30s</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Question Progress Line -->
+      <div class="w-full bg-slate-800/80 h-1.5 rounded-full overflow-hidden">
+        <div id="question-progress-bar" class="h-full bg-gradient-to-r from-emerald-400 to-teal-300 transition-all duration-300" style="width: 20%"></div>
+      </div>
+
+      <!-- Question Container (Multiple Choice, True/False, or Interactive Match) -->
+      <div id="question-card" class="dark-glass-card rounded-3xl p-6 sm:p-8 border border-emerald-500/20 shadow-xl space-y-6">
+        
+        <!-- Category & Format badge -->
+        <div class="flex items-center justify-between">
+          <span id="q-category-tag" class="text-xs font-semibold px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
+            Citología Vegetal
+          </span>
+          <span id="q-type-indicator" class="text-xs text-slate-400 flex items-center gap-1.5">
+            <i data-lucide="help-circle" class="w-3.5 h-3.5 text-emerald-400"></i> Opción Múltiple
+          </span>
+        </div>
+
+        <!-- Question Prompt Text -->
+        <h4 id="q-question-text" class="text-lg sm:text-2xl font-bold font-display text-white leading-snug">
+          ¿Cuál de los siguientes organelos es exclusivo de las células vegetales y responsable de sintetizar carbohidratos mediante la luz?
+        </h4>
+
+        <!-- Options Container -->
+        <div id="q-options-container" class="grid grid-cols-1 gap-3 pt-2">
+          <!-- Dynamic Buttons or interactive UI inserted here -->
+        </div>
+
+        <!-- Feedback & Scientific Explanation Box (Hidden until answered) -->
+        <div id="feedback-box" class="hidden p-4 sm:p-5 rounded-2xl border transition-all duration-300 space-y-2">
+          <div class="flex items-center justify-between">
+            <div id="feedback-status" class="flex items-center gap-2 font-bold text-sm">
+              <!-- Result icon and text -->
+            </div>
+            <span id="feedback-points" class="text-xs font-bold text-amber-300 bg-amber-950/60 border border-amber-700/50 px-2.5 py-1 rounded-md">
+              +100 pts
+            </span>
+          </div>
+          <p id="feedback-explanation" class="text-xs sm:text-sm text-slate-200 leading-relaxed">
+            Explicación científica botánica detallada.
+          </p>
+          <div class="pt-2 flex justify-end">
+            <button id="next-q-btn" onclick="nextQuestion()" class="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-bold px-5 py-2.5 rounded-xl text-xs sm:text-sm flex items-center gap-2 shadow-md transition">
+              <span>Siguiente Desafío</span>
+              <i data-lucide="arrow-right" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- SCREEN 4: GAME OVER (LIVES DEPLETED) -->
+    <div id="screen-gameover" class="hidden max-w-lg mx-auto text-center space-y-6 py-6">
+      <div class="w-20 h-20 mx-auto rounded-full bg-rose-500/10 border-2 border-rose-500/40 flex items-center justify-center text-rose-500 animate-pulse">
+        <i data-lucide="skull" class="w-10 h-10"></i>
+      </div>
+      <div class="space-y-2">
+        <h2 class="text-3xl font-extrabold font-display text-white">¡Muestras Botánicas Agotadas!</h2>
+        <p class="text-slate-300 text-sm">
+          Has perdido tus 3 vidas en el laboratorio. Las plantas requieren gran precisión celular y metabólica. ¡No te rindas y repasa tus apuntes!
+        </p>
+      </div>
+      <div class="p-4 bg-slate-900/60 rounded-2xl border border-slate-800 flex justify-around text-center">
+        <div>
+          <span class="text-xs text-slate-400">Puntaje Alcanzado</span>
+          <p id="gameover-score" class="text-xl font-bold text-amber-300">0</p>
+        </div>
+        <div>
+          <span class="text-xs text-slate-400">Aciertos Totales</span>
+          <p id="gameover-correct" class="text-xl font-bold text-emerald-400">0</p>
+        </div>
+      </div>
+      <div class="flex flex-col sm:flex-row gap-3 justify-center">
+        <button onclick="restartGame()" class="px-6 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm flex items-center justify-center gap-2 transition shadow-lg">
+          <i data-lucide="rotate-ccw" class="w-4 h-4"></i> Reintentar Misión
+        </button>
+        <button onclick="goToScreen('map')" class="px-6 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-sm transition">
+          Regresar al Mapa
+        </button>
+      </div>
+    </div>
+
+    <!-- SCREEN 5: FINAL VICTORY & SUMMARY SCREEN -->
+    <div id="screen-victory" class="hidden space-y-6 py-4">
+      <div class="text-center max-w-xl mx-auto space-y-3">
+        <div class="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-amber-500/10 border border-amber-400/30 text-amber-300 text-xs font-semibold">
+          <i data-lucide="crown" class="w-4 h-4"></i> Evaluación Final Aprobada
+        </div>
+        <h2 class="text-3xl sm:text-4xl font-extrabold font-display text-white">
+          ¡Felicidades, <span id="victory-student-name" class="text-emerald-400">Biólogo</span>!
+        </h2>
+        <p class="text-slate-300 text-sm">
+          Has superado con éxito las pruebas de Biología Vegetal con honores de laboratorio.
+        </p>
+      </div>
+
+      <!-- Stats Summary Grid -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto">
+        <div class="bg-slate-900/70 p-4 rounded-2xl border border-emerald-800/40 text-center">
+          <span class="text-xs text-slate-400 block mb-1">Puntuación Total</span>
+          <span id="summary-score" class="text-2xl font-black font-display text-amber-300">0</span>
+        </div>
+        <div class="bg-slate-900/70 p-4 rounded-2xl border border-emerald-800/40 text-center">
+          <span class="text-xs text-slate-400 block mb-1">Precisión General</span>
+          <span id="summary-accuracy" class="text-2xl font-black font-display text-emerald-400">0%</span>
+        </div>
+        <div class="bg-slate-900/70 p-4 rounded-2xl border border-emerald-800/40 text-center">
+          <span class="text-xs text-slate-400 block mb-1">Rango Obtenido</span>
+          <span id="summary-rank" class="text-sm font-bold text-teal-300 block truncate">Botánico Mayor</span>
+        </div>
+        <div class="bg-slate-900/70 p-4 rounded-2xl border border-emerald-800/40 text-center">
+          <span class="text-xs text-slate-400 block mb-1">Vidas Restantes</span>
+          <div id="summary-lives" class="flex justify-center gap-1 text-rose-500">
+            <i data-lucide="heart" class="w-5 h-5 fill-rose-500"></i>
+            <i data-lucide="heart" class="w-5 h-5 fill-rose-500"></i>
+            <i data-lucide="heart" class="w-5 h-5 fill-rose-500"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Module Score Breakdown -->
+      <div class="max-w-3xl mx-auto dark-glass-card rounded-2xl p-5 border border-emerald-600/30 space-y-3">
+        <h4 class="text-xs font-bold uppercase tracking-wider text-emerald-300">Rendimiento por Módulo</h4>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="modules-breakdown-list">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- Actions: View Certificate & Restart -->
+      <div class="flex flex-wrap items-center justify-center gap-4 pt-2">
+        <button onclick="openCertificateModal()" class="px-6 py-3.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-bold font-display text-sm shadow-xl shadow-amber-500/20 flex items-center gap-2 transition">
+          <i data-lucide="award" class="w-5 h-5"></i>
+          <span>Generar Certificado Oficial</span>
+        </button>
+        <button onclick="restartGame()" class="px-6 py-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-semibold text-sm border border-slate-700 flex items-center gap-2 transition">
+          <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+          <span>Jugar Otra Vez</span>
+        </button>
+        <button onclick="goToScreen('map')" class="px-5 py-3.5 rounded-xl bg-emerald-900/40 hover:bg-emerald-900/60 text-emerald-300 font-semibold text-sm border border-emerald-700/50 flex items-center gap-2 transition">
+          <i data-lucide="map" class="w-4 h-4"></i>
+          <span>Volver al Mapa</span>
+        </button>
+      </div>
+    </div>
+
+  </main>
+
+  <div id="certificate-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4 overflow-y-auto">
+    <div class="relative w-full max-w-4xl bg-white text-slate-900 rounded-3xl shadow-2xl p-6 sm:p-10 border-8 border-emerald-900 overflow-hidden my-auto">
+      
+      <!-- Ornamental Certificate Border Background -->
+      <div class="absolute inset-2 border-2 border-emerald-600/30 rounded-2xl pointer-events-none"></div>
+      <div class="absolute -top-12 -right-12 w-44 h-44 bg-emerald-100 rounded-full opacity-60"></div>
+      <div class="absolute -bottom-12 -left-12 w-44 h-44 bg-amber-100 rounded-full opacity-60"></div>
+
+      <!-- Close Button (Screen only) -->
+      <button onclick="closeCertificateModal()" class="no-print absolute top-4 right-4 p-2 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 transition">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <div class="relative z-10 text-center space-y-6">
+        <!-- Certificate Header -->
+        <div class="space-y-1">
+          <div class="inline-flex items-center gap-2 text-emerald-800 font-bold text-xs tracking-widest uppercase mb-1">
+            <i data-lucide="leaf" class="w-4 h-4 text-emerald-600"></i> Instituto de Ciencias Biológicas Vegetales
+          </div>
+          <h2 class="text-3xl sm:text-4xl font-extrabold font-serif text-slate-900 uppercase tracking-wide">
+            Certificado de Excelencia
+          </h2>
+          <p class="text-xs text-slate-500 tracking-wider">Otorgado por aprovechamiento científico en evaluación botánica</p>
+        </div>
+
+        <div class="py-2">
+          <p class="text-sm italic text-slate-600">Se hace constar con orgullo que:</p>
+          <h3 id="cert-student-name" class="text-2xl sm:text-3xl font-bold font-serif text-emerald-900 mt-1 border-b-2 border-emerald-700/30 inline-block px-8 pb-1">
+            Estudiante Botánico
+          </h3>
+        </div>
+
+        <p class="text-xs sm:text-sm text-slate-700 max-w-xl mx-auto leading-relaxed">
+          Ha completado satisfactoriamente los desafíos evaluativos de los módulos de 
+          <strong>Introducción a la Citología Vegetal, Fisiología & Fotosíntesis, Anatomía de Órganos y Genética & Biotecnología Vegetal</strong>, 
+          demostrando dominio de las ciencias fitológicas.
+        </p>
+
+        <!-- Dynamic Badge & Score on Certificate -->
+        <div class="grid grid-cols-3 gap-2 max-w-lg mx-auto bg-emerald-50/70 p-3 rounded-xl border border-emerald-200 text-xs">
+          <div>
+            <span class="text-slate-500 block">Puntaje Final</span>
+            <strong id="cert-score" class="text-emerald-800 font-bold text-sm">0 pts</strong>
+          </div>
+          <div>
+            <span class="text-slate-500 block">Precisión</span>
+            <strong id="cert-accuracy" class="text-emerald-800 font-bold text-sm">0%</strong>
+          </div>
+          <div>
+            <span class="text-slate-500 block">Rango Otorgado</span>
+            <strong id="cert-rank" class="text-emerald-800 font-bold text-sm">Especialista</strong>
+          </div>
+        </div>
+
+        <!-- Signatures & Date -->
+        <div class="pt-6 flex items-end justify-around border-t border-slate-200 text-xs text-slate-600">
+          <div class="text-center">
+            <div class="font-serif italic font-semibold text-slate-800 text-sm mb-1">Dr. J. H. Linnaeus</div>
+            <div class="w-32 border-b border-slate-400 mx-auto mb-1"></div>
+            <span>Comité Académico de Botánica</span>
+          </div>
+          <div class="text-center">
+            <div id="cert-date" class="font-semibold text-slate-800 text-sm mb-1">2026</div>
+            <div class="w-32 border-b border-slate-400 mx-auto mb-1"></div>
+            <span>Fecha de Emisión</span>
+          </div>
+        </div>
+
+        <!-- Print Action Buttons (Screen only) -->
+        <div class="no-print pt-4 flex justify-center gap-3">
+          <button onclick="window.print()" class="px-5 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs flex items-center gap-2 shadow">
+            <i data-lucide="printer" class="w-4 h-4"></i> Imprimir / Guardar en PDF
+          </button>
+          <button onclick="closeCertificateModal()" class="px-5 py-2.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 font-semibold text-xs">
+            Cerrar
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <footer class="relative z-10 text-center py-4 text-xs text-slate-500 border-t border-emerald-900/30">
+    Desafío Botánico © 2026 • Evaluación interactiva para Educación en Biología Vegetal
+  </footer>
+
+  <script>
+    /* ==========================================================================
+       SOUND ENGINE (Web Audio API - No external assets required)
+       ========================================================================== */
+    let audioCtx = null;
+    let soundEnabled = true;
+
+    function initAudio() {
+      if (!audioCtx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContext();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    function toggleSound() {
+      soundEnabled = !soundEnabled;
+      const icon = document.getElementById('sound-icon');
+      if (soundEnabled) {
+        icon.setAttribute('data-lucide', 'volume-2');
+        playSound('click');
+      } else {
+        icon.setAttribute('data-lucide', 'volume-x');
+      }
+      lucide.createIcons();
+    }
+
+    function playSound(type) {
+      if (!soundEnabled) return;
+      try {
+        initAudio();
+        const ctx = audioCtx;
+        const now = ctx.currentTime;
+
+        if (type === 'click') {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(600, now);
+          osc.frequency.exponentialRampToValueAtTime(300, now + 0.05);
+          gain.gain.setValueAtTime(0.12, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.05);
+        } else if (type === 'correct') {
+          // Cheerful major chord arpeggio
+          [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, now + i * 0.07);
+            gain.gain.setValueAtTime(0.15, now + i * 0.07);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.07 + 0.25);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now + i * 0.07);
+            osc.stop(now + i * 0.07 + 0.25);
+          });
+        } else if (type === 'wrong') {
+          // Low dissonance buzz
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(180, now);
+          osc.frequency.linearRampToValueAtTime(110, now + 0.25);
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.25);
+        } else if (type === 'victory') {
+          // Fanfare sequence
+          [440, 554.37, 659.25, 880].forEach((freq, idx) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, now + idx * 0.12);
+            gain.gain.setValueAtTime(0.2, now + idx * 0.12);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.12 + 0.5);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now + idx * 0.12);
+            osc.stop(now + idx * 0.12 + 0.5);
+          });
+        }
+      } catch (err) {
+        console.warn('Audio not allowed yet or not supported', err);
+      }
+    }
+
+    /* ==========================================================================
+       COURSE DATABASE: 4 COMPREHENSIVE BOTANICAL MODULES
+       ========================================================================== */
+    const courseModules = [
+      {
+        id: 1,
+        title: "Introducción a la Biología Vegetal",
+        shortTitle: "Célula y Clasificación",
+        icon: "sprout",
+        color: "from-emerald-600 to-teal-500",
+        description: "Citología vegetal, organelos (cloroplastos, pared celular, vacuola central) y taxonomía del reino vegetal.",
+        questions: [
+          {
+            id: "m1_q1",
+            category: "Citología Vegetal",
+            type: "choice",
+            question: "¿Qué componente confiere rigidez estructural a la pared celular primaria en las células de las plantas?",
+            options: [
+              "Fibras de celulosa entrelazadas con hemicelulosa y pectina",
+              "Bicapa de fosfolípidos con colesterol",
+              "Quitina asociada a peptidoglicano",
+              "Glucógeno vesicular ramificado"
+            ],
+            correct: 0,
+            explanation: "La pared vegetal primaria está compuesta predominantemente por microfibrillas de celulosa embebidas en una matriz de hemicelulosa y pectinas, otorgando soporte mecánico y turgencia."
+          },
+          {
+            id: "m1_q2",
+            category: "Clasificación Vegetal",
+            type: "choice",
+            question: "¿Cuál de estos grupos de plantas carece de vasos conductores de xilema y floema verdaderos?",
+            options: [
+              "Gimnospermas (Coníferas)",
+              "Briófitas (Musgos y Hepáticas)",
+              "Pteridófitas (Helechos)",
+              "Angiospermas (Plantas con flores)"
+            ],
+            correct: 1,
+            explanation: "Las Briófitas son plantas no vasculares; carecen de xilema y floema lignificados verdaderos, absorbiendo agua directamente por difusión o mediante células conductoras simples llamadas hidroides."
+          },
+          {
+            id: "m1_q3",
+            category: "Organelos Celulares",
+            type: "true_false",
+            question: "La vacuola central en una célula vegetal adulta puede ocupar hasta el 80-90% del volumen celular y regula la turgencia.",
+            options: ["Verdadero", "Falso"],
+            correct: 0,
+            explanation: "¡Correcto! La vacuola central almacena agua, metabolitos y iones, generando la presión hidrostática de turgencia indispensable para mantener erguida la planta."
+          },
+          {
+            id: "m1_q4",
+            category: "Taxonomía Botánica",
+            type: "choice",
+            question: "¿Qué rasgo evolutivo clave distingue a las Angiospermas de las Gimnospermas?",
+            options: [
+              "Presencia de semillas desnudas sin ovario",
+              "Presencia de flores verdaderas y semillas encerradas en un fruto",
+              "Ausencia de alternancia de generaciones",
+              "Reproducción únicamente por esporas flageladas"
+            ],
+            correct: 1,
+            explanation: "Las Angiospermas presentan flores con carpelos que encierran los óvulos; tras la fertilización doble, el ovario se transforma en un fruto protector con las semillas en su interior."
+          }
+        ]
+      },
+      {
+        id: 2,
+        title: "Fisiología y Metabolismo Vegetal",
+        shortTitle: "Fotosíntesis y Hormonas",
+        icon: "sun",
+        color: "from-amber-500 to-emerald-600",
+        description: "Fase fotoquímica, Ciclo de Calvin, transporte en vasos conductores y regulación por fitohormonas.",
+        questions: [
+          {
+            id: "m2_q1",
+            category: "Metabolismo Fotosintético",
+            type: "choice",
+            question: "¿Dónde ocurre la fase luminosa (dependiente de la luz) de la fotosíntesis dentro del cloroplasto?",
+            options: [
+              "En la membrana del tilacoide",
+              "En el estroma fluido",
+              "En la matriz mitocondrial",
+              "En la vacuola central"
+            ],
+            correct: 0,
+            explanation: "Los fotosistemas I y II, la cadena transportadora de electrones y la ATP sintasa están anclados a la membrana de los tilacoides, donde se hidroliza el agua y se libera O₂."
+          },
+          {
+            id: "m2_q2",
+            category: "Fitohormonas",
+            type: "choice",
+            question: "¿Qué fitohormona gaseosa es la principal responsable de inducir la maduración de frutos climatéricos y la abscisión foliar?",
+            options: [
+              "Auxina (AIA)",
+              "Ácido Abscísico (ABA)",
+              "Etileno (C₂H₄)",
+              "Giberelina (GA₃)"
+            ],
+            correct: 2,
+            explanation: "El etileno es una hormona gaseosa que acelera la degradación de clorofila, hidrólisis de almidón en azúcares simples (maduración) y estimula la capa de abscisión de hojas y frutos viejos."
+          },
+          {
+            id: "m2_q3",
+            category: "Fisiología Hídrica",
+            type: "choice",
+            question: "La 'Savias elaborada' (azúcares producidos en las hojas) es conducida activamente a través de:",
+            options: [
+              "Los elementos del vaso del xilema",
+              "Los tubos cribosos y células acompañantes del floema",
+              "Las bandas de Caspary de la endodermis",
+              "Las tráqueas y traqueidas lignificadas"
+            ],
+            correct: 1,
+            explanation: "El floema transporta la savia elaborada (principalmente sacarosa) desde fuentes (hojas) hacia sumideros (raíces, frutos) mediante el mecanismo de flujo por presión."
+          },
+          {
+            id: "m2_q4",
+            category: "Regulación Estomática",
+            type: "true_false",
+            question: "Bajo estrés por sequía, la síntesis de Ácido Abscísico (ABA) en las raíces y hojas provoca el cierre inmediato de los estomas.",
+            options: ["Verdadero", "Falso"],
+            correct: 0,
+            explanation: "Verdadero: El ABA induce la salida de iones potasio (K+) y cloro (Cl-) de las células oclusivas, provocando pérdida de agua por ósmosis y el cierre del poro para evitar la transpiración excesiva."
+          }
+        ]
+      },
+      {
+        id: 3,
+        title: "Anatomía de las Plantas",
+        shortTitle: "Anatomía y Tejidos",
+        icon: "git-commit",
+        color: "from-teal-600 to-cyan-600",
+        description: "Cortes histológicos, estructura transversal de la raíz, endodermis con bandas de Caspary y tejidos meristemáticos.",
+        questions: [
+          {
+            id: "m3_q1",
+            category: "Anatomía de la Raíz",
+            type: "choice",
+            question: "En un corte transversal de raíz primaria, ¿qué capa celular actúa como filtro hidrófobo mediante las 'Bandas de Caspary'?",
+            options: [
+              "La Endodermis",
+              "La Epidermis con pelos radicales",
+              "El Córtex parenquimatoso",
+              "La Cutícula superficial"
+            ],
+            correct: 0,
+            explanation: "La endodermis cuenta con suberina en las Bandas de Caspary, bloqueando la vía apoplástica (libre difusión entre paredes celulares) y forzando a que el agua ingrese por vía simplástica (transmembrana selectiva)."
+          },
+          {
+            id: "m3_q2",
+            category: "Tejidos Vegetales",
+            type: "choice",
+            question: "¿A partir de qué capa celular del cilindro central de la raíz se originan las raíces laterales o secundarias?",
+            options: [
+              "El Periciclo",
+              "El Felógeno",
+              "El Meristemo apical del tallo",
+              "El Parénquima en empalizada"
+            ],
+            correct: 0,
+            explanation: "El periciclo es una capa de células meristemáticas latentes ubicada justo debajo de la endodermis; sus divisiones forman los primordios de las raíces laterales."
+          },
+          {
+            id: "m3_q3",
+            category: "Histología Foliar",
+            type: "choice",
+            question: "¿En qué estrato del mesófilo foliar ocurre la mayor captación lumínica y tasa fotosintética?",
+            options: [
+              "Parénquima en empalizada (palizada)",
+              "Parénquima lagunar o esponjoso",
+              "Epidermis abaxial",
+              "Colénquima angular"
+            ],
+            correct: 0,
+            explanation: "El parénquima en empalizada posee células cilíndricas densamente empaquetadas con la mayor concentración de cloroplastos orientados hacia la radiación solar superior."
+          },
+          {
+            id: "m3_q4",
+            category: "Meristemos",
+            type: "true_false",
+            question: "El cambium vascular y el cambium suberoso son meristemos laterales responsables del crecimiento secundario (en grosor) de tallos y raíces leñosas.",
+            options: ["Verdadero", "Falso"],
+            correct: 0,
+            explanation: "¡Exacto! Mientras los meristemos apicales determinan el crecimiento en longitud, los laterales (cámbium vascular y felógeno) originan madera (xilema secundario) y corteza (corcho)."
+          }
+        ]
+      },
+      {
+        id: 4,
+        title: "Genética y Biotecnología Vegetal",
+        shortTitle: "Genética y Biotecnología",
+        icon: "flask-conical",
+        color: "from-purple-600 to-indigo-600",
+        description: "Cultivo in vitro de tejidos vegetales, totipotencia celular, transgénicos vs fitomejoramiento, CRISPR y conservación genética.",
+        questions: [
+          {
+            id: "m4_q1",
+            category: "Biotecnología Vegetal",
+            type: "choice",
+            question: "¿Qué principio biológico permite regenerar una planta completa a partir de una única célula somática cultivada in vitro?",
+            options: [
+              "Totipotencia celular",
+              "Polimerización de actina",
+              "Heterosis o vigor híbrido",
+              "Epigenética restrictiva"
+            ],
+            correct: 0,
+            explanation: "La totipotencia vegetal es la capacidad innata de las células somáticas vegetales de desdiferenciarse (formar callo) y reprogramar su genoma para regenerar todos los órganos de una planta intacta."
+          },
+          {
+            id: "m4_q2",
+            category: "Ingeniería Genética",
+            type: "choice",
+            question: "¿Cuál es la bacteria de suelo más utilizada en biotecnología como vector biológico natural para transferir ADN recombinante a plantas?",
+            options: [
+              "Agrobacterium tumefaciens (con su plásmido Ti)",
+              "Escherichia coli DH5alpha",
+              "Bacillus thuringiensis (Bt)",
+              "Rhizobium leguminosarum"
+            ],
+            correct: 0,
+            explanation: "Agrobacterium tumefaciens posee el plásmido Ti (Tumor Inducing), del cual se reemplaza la región T-DNA patógena por genes de interés agronómico para transferirlos al genoma vegetal."
+          },
+          {
+            id: "m4_q3",
+            category: "Edición Genómica",
+            type: "choice",
+            question: "¿Qué ventaja clave ofrece la tecnología CRISPR/Cas9 sobre la transgénesis convencional en plantas?",
+            options: [
+              "Permite mutagénesis dirigida y precisa sin insertar ADN foráneo permanente",
+              "Elimina la necesidad de usar agua en el cultivo",
+              "Convierte plantas C3 directamente en algas unicelulares",
+              "Solo funciona en especies no vasculares"
+            ],
+            correct: 0,
+            explanation: "CRISPR/Cas9 permite editar o silenciar con precisión de nucleótido genes nativos de la planta (por ejemplo, susceptibilidad a hongos), logrando cultivos mejorados no-transgénicos (cisgénicos)."
+          },
+          {
+            id: "m4_q4",
+            category: "Conservación Genética",
+            type: "true_false",
+            question: "Los bancos de germoplasma conservan semillas bajo condiciones controladas de humedad baja y temperaturas bajo cero para proteger la variabilidad genética vegetal.",
+            options: ["Verdadero", "Falso"],
+            correct: 0,
+            explanation: "Verdadero: Las semillas ortodoxas se deshidratan y almacenan a -18 °C o en nitrógeno líquido (criopreservación) para salvaguardar cultivares ancestrales y parientes silvestres frente a plagas y cambio climático."
+          }
+        ]
+      }
+    ];
+
+    /* ==========================================================================
+       GAME STATE MANAGEMENT
+       ========================================================================== */
+    const gameState = {
+      playerName: "Explorador Botánico",
+      lives: 3,
+      score: 0,
+      streak: 0,
+      currentQuestionPool: [],
+      currentQuestionIndex: 0,
+      activeModuleId: null, // null means comprehensive test
+      moduleProgress: { 1: 0, 2: 0, 3: 0, 4: 0 },
+      moduleScores: { 1: 0, 2: 0, 3: 0, 4: 0 },
+      moduleTotalAnswered: { 1: 0, 2: 0, 3: 0, 4: 0 },
+      timerInterval: null,
+      timerSeconds: 25,
+      canAnswer: true
+    };
+
+    /* ==========================================================================
+       NAVIGATION & SCREENS
+       ========================================================================== */
+    function goToScreen(screenName) {
+      playSound('click');
+      const screens = ['welcome', 'map', 'game', 'gameover', 'victory'];
+      screens.forEach(s => {
+        const el = document.getElementById(`screen-${s}`);
+        if (el) el.classList.add('hidden');
+      });
+      const target = document.getElementById(`screen-${screenName}`);
+      if (target) target.classList.remove('hidden');
+
+      if (screenName === 'map') {
+        renderMapScreen();
+      }
+      lucide.createIcons();
+    }
+
+    function startGame() {
+      const input = document.getElementById('student-name-input');
+      if (input && input.value.trim() !== '') {
+        gameState.playerName = input.value.trim();
+      }
+      initAudio();
+      playSound('click');
+      goToScreen('map');
+    }
+
+    /* ==========================================================================
+       MAP & MODULE PROGRESSION
+       ========================================================================== */
+    function renderMapScreen() {
+      const container = document.getElementById('modules-grid-container');
+      container.innerHTML = '';
+
+      let totalCompletedQuestions = 0;
+      let totalQuestions = 0;
+
+      courseModules.forEach(mod => {
+        const qCount = mod.questions.length;
+        totalQuestions += qCount;
+        const answered = gameState.moduleProgress[mod.id] || 0;
+        totalCompletedQuestions += answered;
+        const percent = Math.round((answered / qCount) * 100);
+
+        const card = document.createElement('div');
+        card.className = "dark-glass-card p-5 rounded-2xl border border-emerald-700/40 hover:border-emerald-400/60 transition-all flex flex-col justify-between group";
+
+        card.innerHTML = `
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <div class="w-10 h-10 rounded-xl bg-gradient-to-tr ${mod.color} flex items-center justify-center text-white shadow-md">
+                <i data-lucide="${mod.icon}" class="w-5 h-5"></i>
+              </div>
+              <span class="text-xs font-bold px-2.5 py-1 rounded-full ${percent === 100 ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' : 'bg-slate-800 text-slate-400'}">
+                ${percent === 100 ? '✓ Completado' : `${answered}/${qCount} Retos`}
+              </span>
+            </div>
+
+            <div>
+              <span class="text-[11px] font-semibold text-emerald-400 uppercase tracking-wider">Módulo ${mod.id}</span>
+              <h3 class="text-lg font-bold font-display text-white group-hover:text-emerald-300 transition">${mod.title}</h3>
+              <p class="text-xs text-slate-300 line-clamp-2 mt-1">${mod.description}</p>
+            </div>
+          </div>
+
+          <div class="pt-4 space-y-3">
+            <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+              <div class="bg-gradient-to-r ${mod.color} h-full transition-all duration-300" style="width: ${percent}%"></div>
+            </div>
+
+            <button onclick="startSingleModule(${mod.id})" class="w-full py-2.5 rounded-xl bg-emerald-900/40 hover:bg-emerald-800/60 border border-emerald-600/50 hover:border-emerald-400 text-emerald-200 text-xs font-bold tracking-wide flex items-center justify-center gap-2 transition">
+              <span>${percent > 0 && percent < 100 ? 'Continuar Misión' : (percent === 100 ? 'Repasar Módulo' : 'Iniciar Módulo')}</span>
+              <i data-lucide="play" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+
+      const overallPercent = Math.round((totalCompletedQuestions / totalQuestions) * 100);
+      document.getElementById('overall-progress-bar').style.width = `${overallPercent}%`;
+      document.getElementById('overall-progress-text').innerText = `${overallPercent}%`;
+      lucide.createIcons();
+    }
+
+    /* ==========================================================================
+       EXAM LAUNCHERS
+       ========================================================================== */
+    function startSingleModule(moduleId) {
+      playSound('click');
+      gameState.activeModuleId = moduleId;
+      const mod = courseModules.find(m => m.id === moduleId);
+      gameState.currentQuestionPool = [...mod.questions];
+      gameState.currentQuestionIndex = 0;
+      setupGameUI();
+    }
+
+    function startFullEvaluation() {
+      playSound('click');
+      gameState.activeModuleId = null; // Full test
+      let allQuestions = [];
+      courseModules.forEach(m => {
+        allQuestions.push(...m.questions);
+      });
+      // Shuffle questions for comprehensive challenge
+      gameState.currentQuestionPool = allQuestions.sort(() => Math.random() - 0.5);
+      gameState.currentQuestionIndex = 0;
+      setupGameUI();
+    }
+
+    function setupGameUI() {
+      goToScreen('game');
+      renderQuestion();
+    }
+
+    /* ==========================================================================
+       RENDER CURRENT QUESTION
+       ========================================================================== */
+    function renderQuestion() {
+      clearInterval(gameState.timerInterval);
+      gameState.canAnswer = true;
+      document.getElementById('feedback-box').classList.add('hidden');
+
+      const q = gameState.currentQuestionPool[gameState.currentQuestionIndex];
+      const total = gameState.currentQuestionPool.length;
+      const currentIdx = gameState.currentQuestionIndex + 1;
+
+      // Module header label
+      let modTitle = "Examen Integral";
+      let modBadge = "Evaluación Completa";
+      if (gameState.activeModuleId) {
+        const mod = courseModules.find(m => m.id === gameState.activeModuleId);
+        modTitle = mod.title;
+        modBadge = `Módulo ${mod.id}`;
+      } else {
+        // Find which module this question belongs to
+        const foundMod = courseModules.find(m => m.questions.some(item => item.id === q.id));
+        if (foundMod) {
+          modBadge = `Módulo ${foundMod.id}`;
+          modTitle = foundMod.title;
+        }
+      }
+
+      document.getElementById('active-module-badge').innerText = modBadge;
+      document.getElementById('active-module-title').innerText = modTitle;
+      document.getElementById('current-q-index').innerText = currentIdx;
+      document.getElementById('total-q-count').innerText = total;
+
+      const progressPercent = (currentIdx / total) * 100;
+      document.getElementById('question-progress-bar').style.width = `${progressPercent}%`;
+
+      // Category and Type
+      document.getElementById('q-category-tag').innerText = q.category;
+      document.getElementById('q-type-indicator').innerHTML = q.type === 'true_false' 
+        ? `<i data-lucide="check-square" class="w-3.5 h-3.5 text-amber-400"></i> Verdadero o Falso`
+        : `<i data-lucide="help-circle" class="w-3.5 h-3.5 text-emerald-400"></i> Opción Múltiple`;
+
+      // Question text
+      document.getElementById('q-question-text').innerText = q.question;
+
+      // Options Rendering
+      const optionsBox = document.getElementById('q-options-container');
+      optionsBox.innerHTML = '';
+
+      q.options.forEach((opt, idx) => {
+        const btn = document.createElement('button');
+        btn.className = "w-full text-left p-3.5 sm:p-4 rounded-2xl bg-slate-900/80 hover:bg-emerald-950/40 border border-slate-700 hover:border-emerald-500/60 text-slate-100 text-xs sm:text-sm font-medium transition flex items-center justify-between group transform active:scale-[0.99]";
+        btn.onclick = () => submitAnswer(idx);
+
+        const letter = String.fromCharCode(65 + idx); // A, B, C, D
+        btn.innerHTML = `
+          <div class="flex items-center gap-3">
+            <span class="w-7 h-7 rounded-xl bg-slate-800 text-slate-300 group-hover:bg-emerald-500 group-hover:text-slate-950 font-bold flex items-center justify-center text-xs transition">
+              ${q.type === 'true_false' ? (idx === 0 ? 'V' : 'F') : letter}
+            </span>
+            <span class="leading-snug">${opt}</span>
+          </div>
+          <i data-lucide="chevron-right" class="w-4 h-4 text-slate-500 group-hover:text-emerald-400 transition transform group-hover:translate-x-1"></i>
+        `;
+        optionsBox.appendChild(btn);
+      });
+
+      startQuestionTimer();
+      lucide.createIcons();
+    }
+
+    /* ==========================================================================
+       QUESTION TIMER
+       ========================================================================== */
+    function startQuestionTimer() {
+      gameState.timerSeconds = 25;
+      const timerLabel = document.getElementById('time-remaining');
+      timerLabel.innerText = `${gameState.timerSeconds}s`;
+
+      gameState.timerInterval = setInterval(() => {
+        gameState.timerSeconds--;
+        if (gameState.timerSeconds >= 0) {
+          timerLabel.innerText = `${gameState.timerSeconds}s`;
+        }
+        if (gameState.timerSeconds <= 5) {
+          timerLabel.classList.add('text-rose-400', 'animate-pulse');
+        } else {
+          timerLabel.classList.remove('text-rose-400', 'animate-pulse');
+        }
+
+        if (gameState.timerSeconds <= 0) {
+          clearInterval(gameState.timerInterval);
+          if (gameState.canAnswer) {
+            handleTimeOut();
+          }
+        }
+      }, 1000);
+    }
+
+    function handleTimeOut() {
+      submitAnswer(-1); // -1 = Timeout / Incorrect
+    }
+
+    /* ==========================================================================
+       ANSWER VALIDATION & FEEDBACK
+       ========================================================================== */
+    function submitAnswer(selectedIndex) {
+      if (!gameState.canAnswer) return;
+      gameState.canAnswer = false;
+      clearInterval(gameState.timerInterval);
+
+      const q = gameState.currentQuestionPool[gameState.currentQuestionIndex];
+      const isCorrect = selectedIndex === q.correct;
+      const optionsBox = document.getElementById('q-options-container');
+      const buttons = optionsBox.getElementsByTagName('button');
+
+      // Identify module ID for stats
+      let associatedModId = gameState.activeModuleId;
+      if (!associatedModId) {
+        const found = courseModules.find(m => m.questions.some(item => item.id === q.id));
+        associatedModId = found ? found.id : 1;
+      }
+
+      gameState.moduleTotalAnswered[associatedModId]++;
+
+      // Highlight options
+      for (let i = 0; i < buttons.length; i++) {
+        buttons[i].disabled = true;
+        if (i === q.correct) {
+          buttons[i].classList.remove('bg-slate-900/80', 'border-slate-700');
+          buttons[i].classList.add('bg-emerald-900/80', 'border-emerald-400', 'text-emerald-100');
+        } else if (i === selectedIndex && !isCorrect) {
+          buttons[i].classList.remove('bg-slate-900/80', 'border-slate-700');
+          buttons[i].classList.add('bg-rose-950/80', 'border-rose-500', 'text-rose-100');
+        } else {
+          buttons[i].classList.add('opacity-40');
+        }
+      }
+
+      const feedbackBox = document.getElementById('feedback-box');
+      const feedbackStatus = document.getElementById('feedback-status');
+      const feedbackPoints = document.getElementById('feedback-points');
+      const feedbackExplanation = document.getElementById('feedback-explanation');
+
+      feedbackExplanation.innerText = q.explanation;
+      feedbackBox.classList.remove('hidden', 'bg-emerald-950/50', 'border-emerald-600/40', 'bg-rose-950/50', 'border-rose-600/40');
+
+      if (isCorrect) {
+        playSound('correct');
+        gameState.streak++;
+        const multiplier = Math.min(gameState.streak, 4);
+        const earned = 100 * multiplier;
+        gameState.score += earned;
+        gameState.moduleScores[associatedModId] += earned;
+        gameState.moduleProgress[associatedModId] = Math.min(
+          (gameState.moduleProgress[associatedModId] || 0) + 1,
+          4
+        );
+
+        feedbackBox.classList.add('bg-emerald-950/50', 'border-emerald-600/40');
+        feedbackStatus.className = "flex items-center gap-2 font-bold text-sm text-emerald-400";
+        feedbackStatus.innerHTML = `<i data-lucide="check-circle-2" class="w-5 h-5"></i> ¡Respuesta Correcta!`;
+        feedbackPoints.innerText = `+${earned} pts (x${multiplier})`;
+      } else {
+        playSound('wrong');
+        gameState.streak = 0;
+        gameState.lives--;
+
+        feedbackBox.classList.add('bg-rose-950/50', 'border-rose-600/40');
+        feedbackStatus.className = "flex items-center gap-2 font-bold text-sm text-rose-400";
+        feedbackStatus.innerHTML = selectedIndex === -1 
+          ? `<i data-lucide="clock" class="w-5 h-5"></i> ¡Tiempo Agotado!`
+          : `<i data-lucide="x-circle" class="w-5 h-5"></i> Respuesta Incorrecta`;
+        feedbackPoints.innerText = `0 pts`;
+      }
+
+      updateTopBarUI();
+      lucide.createIcons();
+
+      // Check for Game Over immediately or proceed
+      if (gameState.lives <= 0) {
+        setTimeout(() => {
+          showGameOverScreen();
+        }, 1200);
+      }
+    }
+
+    function updateTopBarUI() {
+      document.getElementById('player-lives').innerText = gameState.lives;
+      document.getElementById('player-score').innerText = gameState.score;
+      const mult = Math.min(gameState.streak > 0 ? gameState.streak : 1, 4);
+      document.getElementById('player-streak').innerText = `Racha x${mult}`;
+    }
+
+    function nextQuestion() {
+      playSound('click');
+      gameState.currentQuestionIndex++;
+      if (gameState.currentQuestionIndex < gameState.currentQuestionPool.length) {
+        renderQuestion();
+      } else {
+        showVictoryScreen();
+      }
+    }
+
+    /* ==========================================================================
+       GAME OVER & RESTART
+       ========================================================================== */
+    function showGameOverScreen() {
+      goToScreen('gameover');
+      document.getElementById('gameover-score').innerText = gameState.score;
+      let correctCount = Object.values(gameState.moduleProgress).reduce((a, b) => a + b, 0);
+      document.getElementById('gameover-correct').innerText = correctCount;
+      lucide.createIcons();
+    }
+
+    function restartGame() {
+      gameState.lives = 3;
+      gameState.score = 0;
+      gameState.streak = 0;
+      gameState.moduleProgress = { 1: 0, 2: 0, 3: 0, 4: 0 };
+      gameState.moduleScores = { 1: 0, 2: 0, 3: 0, 4: 0 };
+      gameState.moduleTotalAnswered = { 1: 0, 2: 0, 3: 0, 4: 0 };
+      updateTopBarUI();
+      goToScreen('map');
+    }
+
+    /* ==========================================================================
+       VICTORY & PERFORMANCE BREAKDOWN
+       ========================================================================== */
+    function showVictoryScreen() {
+      playSound('victory');
+      try {
+        confetti({
+          particleCount: 120,
+          spread: 80,
+          origin: { y: 0.6 }
+        });
+      } catch (e) {}
+
+      goToScreen('victory');
+
+      document.getElementById('victory-student-name').innerText = gameState.playerName;
+      document.getElementById('summary-score').innerText = gameState.score;
+
+      // Accuracy calculation
+      let totalAnswered = 0;
+      let totalCorrect = 0;
+      for (let i = 1; i <= 4; i++) {
+        totalAnswered += (gameState.moduleTotalAnswered[i] || 0);
+        totalCorrect += (gameState.moduleProgress[i] || 0);
+      }
+      const acc = totalAnswered > 0 ? Math.round((totalCorrect / totalAnswered) * 100) : 100;
+      document.getElementById('summary-accuracy').innerText = `${acc}%`;
+
+      // Botanical Rank determination
+      let rank = "Investigador Botánico Junior";
+      if (gameState.score >= 2000 && acc >= 85) rank = "Maestro Botánico Laureado";
+      else if (gameState.score >= 1200) rank = "Fisiólogo Vegetal Especialista";
+      else if (gameState.score >= 600) rank = "Biólogo de Campo Avanzado";
+      document.getElementById('summary-rank').innerText = rank;
+
+      // Render module breakdown cards
+      const breakdownBox = document.getElementById('modules-breakdown-list');
+      breakdownBox.innerHTML = '';
+
+      courseModules.forEach(mod => {
+        const correct = gameState.moduleProgress[mod.id] || 0;
+        const totalModQ = mod.questions.length;
+        const pts = gameState.moduleScores[mod.id] || 0;
+        const percent = Math.round((correct / totalModQ) * 100);
+
+        const item = document.createElement('div');
+        item.className = "p-3 bg-slate-900/80 rounded-xl border border-slate-800 flex items-center justify-between text-xs";
+        item.innerHTML = `
+          <div class="flex items-center gap-2.5">
+            <span class="p-1.5 rounded-lg bg-emerald-500/20 text-emerald-400">
+              <i data-lucide="${mod.icon}" class="w-4 h-4"></i>
+            </span>
+            <div>
+              <span class="font-bold text-white block">${mod.shortTitle}</span>
+              <span class="text-slate-400">${correct} de ${totalModQ} aciertos (${pts} pts)</span>
+            </div>
+          </div>
+          <span class="font-bold ${percent >= 75 ? 'text-emerald-400' : 'text-amber-400'}">${percent}%</span>
+        `;
+        breakdownBox.appendChild(item);
+      });
+
+      lucide.createIcons();
+    }
+
+    /* ==========================================================================
+       CERTIFICATE GENERATOR
+       ========================================================================== */
+    function openCertificateModal() {
+      playSound('click');
+      document.getElementById('cert-student-name').innerText = gameState.playerName;
+      document.getElementById('cert-score').innerText = `${gameState.score} Puntos`;
+      
+      let totalAnswered = 0;
+      let totalCorrect = 0;
+      for (let i = 1; i <= 4; i++) {
+        totalAnswered += (gameState.moduleTotalAnswered[i] || 0);
+        totalCorrect += (gameState.moduleProgress[i] || 0);
+      }
+      const acc = totalAnswered > 0 ? Math.round((totalCorrect / totalAnswered) * 100) : 100;
+      document.getElementById('cert-accuracy').innerText = `${acc}%`;
+
+      let rank = "Maestro Botánico";
+      if (gameState.score >= 1800) rank = "Catedrático de Honor en Botánica";
+      else if (gameState.score >= 1000) rank = "Investigador en Biotecnología";
+      document.getElementById('cert-rank').innerText = rank;
+
+      const dateStr = new Date().toLocaleDateString('es-ES', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+      document.getElementById('cert-date').innerText = dateStr;
+
+      document.getElementById('certificate-modal').classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function closeCertificateModal() {
+      playSound('click');
+      document.getElementById('certificate-modal').classList.add('hidden');
+    }
+
+    // Initialize Lucide icons on start
+    window.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+    });
+  </script>
+</body>
+</html>
